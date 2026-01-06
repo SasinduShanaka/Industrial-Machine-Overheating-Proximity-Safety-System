@@ -16,7 +16,7 @@ const char* ssid = "Dialog 4G 688";
 const char* password = "AnukaAshara";
 
 /* ===== SERVER DETAILS ===== */
-const char* serverIP = "192.168.8.111";   // 🔴 CHANGE to your PC IP
+const char* serverIP = "192.168.8.111";   // CHANGE to your PC IP
 const int serverPort = 5000;
 
 WiFiClient client;
@@ -63,7 +63,7 @@ void loop() {
   Serial.print(temperature);
   Serial.println(" °C");
 
-  // 🔥 Temperature LED logic
+  //Temperature LED logic
   digitalWrite(ledTemp, temperature > 29.0 ? HIGH : LOW);
 
   delay(100); // DHT delay
@@ -86,7 +86,7 @@ void loop() {
   // 💡 Distance LED logic
   digitalWrite(ledDistance, (distanceCM > 0 && distanceCM <= 5) ? HIGH : LOW);
 
-  /* 🌐 SEND DATA TO WEB SERVER */
+  /*SEND DATA TO WEB SERVER */
   if (client.connect(serverIP, serverPort)) {
 
     String jsonData = "{";
