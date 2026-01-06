@@ -1,0 +1,116 @@
+#include <ESP8266WiFi.h>
+#include <DHT.h>
+
+/* ===== PIN DEFINITIONS (NodeMCU) ===== */
+#define DHTPIN D4        // GPIO2
+#define DHTTYPE DHT11
+
+#define trigPin D5       // GPIO14
+#define echoPin D6       // GPIO12
+
+#define ledDistance D7  // GPIO13
+#define ledTemp D8      // GPIO15
+
+/* ===== WIFI CREDENTIALS ===== */
+const char* ssid = "Dialog 4G 688";
+const char* password = "AnukaAshara";
+
+/* ===== SERVER DETAILS ===== */
+const char* serverIP = "192.168.8.111";   // 🔴 CHANGE to your PC IP
+const int serverPort = 5000;
+
+WiFiClient client;
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  pinMode(ledDistance, OUTPUT);
+  pinMode(ledTemp, OUTPUT);
+
+  dht.begin();
+
+  /* ===== CONNECT TO WIFI ===== */
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi Connected");
+  Serial.print("ESP8266 IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.println("NodeMCU Sensor System Started...");
+}
+
+void loop() {
+
+  /* 🌡 TEMPERATURE */
+  float temperature = dht.readTemperature();
+
+  if (isnan(temperature)) {
+    Serial.println("Failed to read DHT sensor");
+    return;
+  }
+
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.println(" °C");
+
+  // 🔥 Temperature LED logic
+  digitalWrite(ledTemp, temperature > 29.0 ? HIGH : LOW);
+
+  delay(1000); // DHT delay
+
+  /* 📡 ULTRASONIC DISTANCE */
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH, 30000); // timeout safety
+  long distanceCM = duration * 0.034 / 2;
+
+  Serial.print("Distance: ");
+  Serial.print(distanceCM);
+  Serial.println(" cm");
+
+  // 💡 Distance LED logic
+  digitalWrite(ledDistance, (distanceCM > 0 && distanceCM <= 5) ? HIGH : LOW);
+
+  /* 🌐 SEND DATA TO WEB SERVER */
+  if (client.connect(serverIP, serverPort)) {
+
+    String jsonData = "{";
+    jsonData += "\"temperature\":" + String(temperature) + ",";
+    jsonData += "\"distance\":" + String(distanceCM);
+    jsonData += "}";
+
+    client.println("POST /data HTTP/1.1");
+    client.println("Host: " + String(serverIP));
+    client.println("Content-Type: application/json");
+    client.println("Content-Length: " + String(jsonData.length()));
+    client.println();
+    client.println(jsonData);
+
+    client.stop();
+
+    Serial.println("Data sent to server");
+  } else {
+    Serial.println("Server connection failed");
+  }
+
+  delay(2000);  // Send every 2 seconds
+}
+
+
+
+//////   https://github.com/esp8266/Arduino
