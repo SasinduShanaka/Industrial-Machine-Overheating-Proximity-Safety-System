@@ -108,7 +108,7 @@ void loop() {
     Serial.println("Server connection failed");
   }
 
-  delay(2000);  // Send every 2 seconds
+  delay(100);  // Send every 2 seconds
 }
 
 
